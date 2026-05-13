@@ -1,11 +1,7 @@
 streamlit
-pandas
 selenium
+beautifulsoup4
+pandas
+openpyxl
 webdriver-manager
-beautifulsoup4
-openpyxl
-streamlit
-pandas
-selenium
-beautifulsoup4
-openpyxl
+chromedriver-binary
