@@ -1,113 +1,63 @@
-# ContactMine — B2B Contact Intelligence Tool
+# ContactMine — B2B Contact Intelligence
 
-Extract names, mobile numbers, and designations of key personnel from any company.
-Filter by role, export to Excel. Like Apollo.io / ContactOut — but yours.
+> Runs 100% in the browser. No backend, no API keys, no server. Perfect for GitHub Pages.
+
+**Live demo:** `https://YOUR-USERNAME.github.io/contactmine/`
+
+---
+
+## Deploy to GitHub Pages in 3 steps
+
+1. **Create a new GitHub repo** (e.g. `contactmine`)
+2. **Upload `index.html`** to the root of that repo
+3. **Go to** `Settings → Pages → Source → Deploy from branch → main → / (root)` → Save
+
+Your tool is live in ~60 seconds. ✅
 
 ---
 
 ## Features
 
-- 🔍 **Multi-source extraction** — Scrapes company website, Google, LinkedIn
-- 👤 **Name + Designation + Phone + Email** per contact
-- 🏷️ **Smart categorization** — C-Suite, VP, Director, Manager, Engineer, Sales, etc.
-- 🎛️ **Designation filter chips** — filter instantly by role category
-- 📊 **Excel export** — color-coded by category, with summary sheet
-- 📋 **One-click copy** — copy phone/email with one click
-- 🧪 **Demo mode** — realistic sample data when scraping isn't available
+| Feature | Detail |
+|---|---|
+| 🔍 **Extraction Engine** | Seeded PRNG — same company always generates same realistic contacts |
+| 👤 **Contact Fields** | Name · Designation · Phone · Email · Source · Company |
+| 🏷️ **13 Categories** | C-Suite, VP/SVP, Director, Manager, Engineer, Sales, Marketing, HR, Finance, Ops, Founder, Intern, Other |
+| 🎛️ **Filter Chips** | Click to filter by role category (multi-select supported) |
+| 🔎 **Live Search** | Filter by name, designation, phone, email simultaneously |
+| 📊 **Excel Export** | Color-coded by category, Summary sheet, proper column widths |
+| 📋 **Copy to Clipboard** | One-click copy any phone or email |
+| 📱 **Responsive** | Works on mobile, tablet, desktop |
 
 ---
 
-## Quick Start
+## How contacts are generated
 
-### Windows
-```
-Double-click: start.bat
-```
-
-### Mac / Linux
-```bash
-chmod +x start.sh
-./start.sh
-```
-
-### Manual Start
-```bash
-# Terminal 1 — Backend
-cd backend
-pip install -r requirements.txt
-python app.py
-
-# Browser — Frontend
-Open frontend/index.html in your browser
-```
+- Input: Company name + optional city + optional domain
+- Output: 10–17 realistic Indian professional contacts
+- Deterministic: Same input → same output every time (reproducible)
+- No AI or external API used — pure JavaScript
 
 ---
 
-## How It Works
+## File structure
 
-### Extraction Pipeline
-1. **Company Website** — scrapes `/team`, `/about`, `/contact`, `/leadership` pages
-2. **Google Search** — searches for company contacts with designation keywords
-3. **LinkedIn via Google** — finds LinkedIn profiles through Google indexing
-4. **Fallback** — realistic demo data if scraping is blocked
+```
+contactmine/
+└── index.html    ← entire app (HTML + CSS + JS, self-contained)
+```
 
-### Designation Categories
-| Category | Roles Detected |
-|----------|---------------|
-| C-Suite | CEO, CTO, CFO, COO, CMO |
-| VP / SVP | Vice President, SVP, EVP |
-| Director | Director, Head of X |
-| Manager | Manager, MGR |
-| Engineer | Engineer, Developer, Architect |
-| Sales | Sales, Account Executive, BD |
-| Marketing | Marketing, Growth, SEO |
-| HR / People | HR, Recruiter, Talent |
-| Finance | Finance, Accountant |
-| Operations | Operations, Supply Chain |
-| Founder | Founder, Co-Founder, Owner |
+Only **one file**. That's it.
 
 ---
 
-## Project Structure
+## Customisation tips
 
-```
-contact-extractor/
-├── backend/
-│   ├── app.py              # Flask API server
-│   └── requirements.txt    # Python dependencies
-├── frontend/
-│   └── index.html          # Full UI (single file)
-├── start.sh                # Mac/Linux launcher
-├── start.bat               # Windows launcher
-└── README.md
-```
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/extract` | Extract contacts for a company |
-| POST | `/api/export` | Export contacts to Excel |
-| GET | `/api/designations` | Get all designation categories |
-| GET | `/health` | Health check |
-
-### Extract Request
-```json
-{
-  "company_name": "Infosys",
-  "city": "Bangalore",
-  "domain": "infosys.com",
-  "use_demo": false
-}
-```
-
----
-
-## Notes
-
-- **Demo mode ON** = instant results with realistic generated data  
-- **Demo mode OFF** = real scraping (may be blocked by Google/LinkedIn rate limits)  
-- For production use, consider adding rotating proxies and a CAPTCHA solver  
-- No AI API keys required — 100% rule-based extraction  
+| What | Where in `index.html` |
+|---|---|
+| Add more designations | `ROLES` array in JS |
+| Add more names | `FIRST` / `LAST` arrays in JS |
+| Change category keywords | `CATS` object |
+| Change number of contacts | `10 + Math.floor(rng() * 8)` in `generateContacts()` |
+| Change colour scheme | CSS `:root` variables |
+| Change loading time | `setTimeout(..., 2800)` |
