@@ -4,3 +4,8 @@ selenium
 webdriver-manager
 beautifulsoup4
 openpyxl
+streamlit
+pandas
+selenium
+beautifulsoup4
+openpyxl
