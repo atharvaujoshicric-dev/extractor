@@ -1,7 +1,0 @@
-streamlit
-selenium
-beautifulsoup4
-pandas
-openpyxl
-webdriver-manager
-chromedriver-binary
