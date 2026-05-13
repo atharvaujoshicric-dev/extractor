@@ -3,26 +3,37 @@ import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import time
 import urllib.parse
+import os
 
-# --- Function: Web Scraper ---
-def scrape_leads(company_query, city):
+# --- Optimized Driver Setup for Streamlit Cloud ---
+def get_driver():
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
     
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    # Try to find the system-installed chromium-driver
+    # On Streamlit Cloud, this is usually at /usr/bin/chromedriver
+    service = Service("/usr/bin/chromedriver")
     
-    # We use Google Dorking to find LinkedIn profiles without needing a LinkedIn Login
+    try:
+        return webdriver.Chrome(service=service, options=options)
+    except Exception:
+        # Fallback for local testing (uses default path)
+        return webdriver.Chrome(options=options)
+
+def scrape_leads(company_query, city):
+    driver = get_driver()
+    
     search_query = f'site:linkedin.com/in/ "{company_query}" "{city}"'
     url = f"https://www.google.com/search?q={urllib.parse.quote(search_query)}"
     
     driver.get(url)
-    time.sleep(2) # Allow time for bypass/loading
+    time.sleep(3) # Increased wait for cloud latency
     
     soup = BeautifulSoup(driver.page_source, "html.parser")
     search_results = soup.find_all('div', class_='g')
@@ -30,8 +41,10 @@ def scrape_leads(company_query, city):
     leads = []
     for res in search_results:
         try:
-            title = res.find('h3').text if res.find('h3') else ""
-            # Title usually looks like: "John Doe - Senior Manager - Company Name"
+            title_tag = res.find('h3')
+            if not title_tag: continue
+            title = title_tag.text
+            
             if " - " in title:
                 parts = title.split(" - ")
                 name = parts[0]
@@ -40,68 +53,55 @@ def scrape_leads(company_query, city):
                 name = title
                 designation = "N/A"
                 
-            snippet = res.find('div', class_='VwiC3b').text if res.find('div', class_='VwiC3b') else ""
+            snippet_tag = res.find('div', class_='VwiC3b')
+            snippet = snippet_tag.text if snippet_tag else ""
             
-            # Basic Regex-free phone extraction from snippets
+            # Basic extraction for phone-like strings
             words = snippet.split()
             phone = "Not Found"
             for word in words:
-                if any(char.isdigit() for char in word) and len(word) > 9:
+                clean_word = "".join(filter(str.isdigit, word))
+                if len(clean_word) >= 10:
                     phone = word
                     break
 
             leads.append({
                 "Name": name,
                 "Designation": designation,
-                "Mobile": phone,
-                "Source": "LinkedIn/Google"
+                "Mobile": phone
             })
-        except Exception:
+        except:
             continue
             
     driver.quit()
     return leads
 
 # --- Streamlit UI ---
-st.set_page_config(page_title="Lead Extractor Pro", layout="wide")
-st.title("🏢 Contact & Designation Extractor")
-st.markdown("Extract names, roles, and numbers without AI API keys.")
+st.set_page_config(page_title="Lead Extractor", layout="wide")
+st.title("🏢 Contact Extractor (No-AI)")
 
 with st.sidebar:
-    st.header("Search Parameters")
-    company_input = st.text_input("Company Name / LinkedIn URL")
-    city_input = st.text_input("City Name", value="New York")
-    search_btn = st.button("Extract Leads")
+    st.header("Search")
+    company_input = st.text_input("Company Name")
+    city_input = st.text_input("City", value="San Francisco")
+    search_btn = st.button("Start Extraction")
 
 if search_btn and company_input:
-    with st.spinner(f"Searching for employees at {company_input}..."):
+    with st.spinner("Accessing web data..."):
         data = scrape_leads(company_input, city_input)
         
         if data:
             df = pd.DataFrame(data)
             
-            # --- Filtering ---
-            st.subheader("Filter Results")
-            all_designations = df['Designation'].unique().tolist()
-            selected_desig = st.multiselect("Filter by Designation", all_designations, default=all_designations)
+            # Filter Logic
+            unique_roles = df['Designation'].unique().tolist()
+            selected_roles = st.multiselect("Filter Designations", unique_roles, default=unique_roles)
             
-            filtered_df = df[df['Designation'].isin(selected_desig)]
+            final_df = df[df['Designation'].isin(selected_roles)]
+            st.table(final_df)
             
-            st.dataframe(filtered_df, use_container_width=True)
-            
-            # --- Export to Excel ---
-            output_file = "extracted_leads.xlsx"
-            filtered_df.to_excel(output_file, index=False)
-            
-            with open(output_file, "rb") as file:
-                st.download_button(
-                    label="📥 Export to Excel",
-                    data=file,
-                    file_name="company_leads.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+            # Excel Export
+            csv = final_df.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Download Results (CSV)", data=csv, file_name="leads.csv", mime="text/csv")
         else:
-            st.error("No results found. Try adjusting the company name or check your connection.")
-
-elif search_btn:
-    st.warning("Please enter a company name or link.")
+            st.error("Could not find data. Google might be blocking the cloud IP.")
